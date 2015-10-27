@@ -9,7 +9,7 @@ setup(
     url='http://fbkarsdorp.github.io/textnet',
     author='Folgert Karsdorp',
     author_email='fbkarsdorp AT fastmail DOT nl',
-    install_requires=['numpy', 'scipy', 'pandas', 'networkx', 'scikit-learn', 'igraph', 'seaborn', 'pyprind']
+    install_requires=['numpy', 'scipy', 'pandas', 'networkx', 'scikit-learn', 'python-igraph', 'seaborn', 'pyprind']
 )
 
 
