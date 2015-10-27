@@ -1,0 +1,3 @@
+# TextNet
+
+This module is still under active development and not considered stable AT ALL. More info soon...
