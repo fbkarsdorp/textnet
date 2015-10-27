@@ -148,7 +148,7 @@ def to_graph(choices, time_index=False, sigma=0.5, only_best=False):
     """
     G = nx.DiGraph()
     for i, neighbors in enumerate(choices):
-        G.add_node(i, date=time_index[i] if time_index is not None else None)
+        G.add_node(i, date=time_index[i] if time_index is not False else None)
         if only_best:
             best = np.argmax(neighbors)
             neighbors = np.array([best]) if neighbors[best] >= sigma else np.array([])
@@ -156,7 +156,7 @@ def to_graph(choices, time_index=False, sigma=0.5, only_best=False):
             neighbors = np.where(neighbors >= sigma)[0]
         if neighbors.shape[0] > 0:
             for neighbor in neighbors:
-                G.add_node(neighbor, date=time_index[neighbor] if time_index is not None else None)
+                G.add_node(neighbor, date=time_index[neighbor] if time_index is not False else None)
                 G.add_edge(i, neighbor)
     return G
 
@@ -236,10 +236,10 @@ def evolving_graphs(choices, time_index, groupby=lambda x: x, sigma=0.5):
         for neighbors in stories.values:
             index = i
             neighbors = np.where(neighbors >= sigma)[0]
-            G.add_node(index, date=time_index[index] if time_index is not None else None)
+            G.add_node(index, date=time_index[index] if time_index is not False else None)
             if neighbors.shape[0] > 0:
                 for neighbor in neighbors:
-                    G.add_node(neighbor, date=time_index[neighbor] if time_index is not None else None)
+                    G.add_node(neighbor, date=time_index[neighbor] if time_index is not False else None)
                     G.add_edge(index, neighbor)
             i += 1
         yield group_id, G
