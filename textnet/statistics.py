@@ -51,7 +51,12 @@ def graph_statistics(graph, lower_degree_bounds=0):
 
 def fit_densification(statistics):
     """
-    Fit densification of nodes and edges according to x ** alpha. 
+    Fit densification of nodes and edges according to x ** alpha as described by
+    Leskovec et al. (2007) Graph evolution. Densification and shrinking diameters
+
+    Parameters
+    ----------
+    statistics : output of graph_statistics
     """
     def densification(x, alpha):
         return x ** alpha
@@ -65,7 +70,30 @@ def fit_densification(statistics):
 def evolving_graph_statistics(choices, time_index, groupby=lambda x: x, sigma=0.5, lower_degree_bounds=0):
     """
     Utility function to compute the topological properties of graphs created 
-    at different points in time.
+    at different points in time. The function expects a time_index with Timestamp 
+    objects. These Timestamps are grouped using the specified groupby function.
+    The function return as pandas DataFrame with topological statistics for each
+    (grouped) point in time. Examples of the groupby function:
+
+    >>> groupby = lambda x: x.year # create graphs for each year
+    >>> groupby = lambda x: x.year // 10 * 10 # create graphs for each decade
+    >>> groupby = pd.TimeGrouper(freq='M') # create graphs for each month
+
+    Parameters
+    ----------
+    Choices : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
+        Index corresponding to time points of each sample in X. If supplied,
+        neighbors for each item x in X will only consist of samples that occur 
+        before or at the time point corresponding with x. Default is None.
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    sigma : float, default 0.5
+        The threshold percentage of how often a data point must be 
+        assigned as nearest neighbor.
+    lower_degree_bounds : integer, default 0
+        Set lower_degree_bounds to 0 if you don't want to include unconnected
+        nodes in the degree computations, -1 otherwise.        
     """
     statistics = []
     for time_step, graph in evolving_graphs(choices, time_index, groupby=groupby, sigma=sigma):
@@ -79,7 +107,17 @@ def evolving_graph_statistics(choices, time_index, groupby=lambda x: x, sigma=0.
 def eval_sigmas(neighbors, min_sigma=0, max_sigma=1, step_size=0.01):
     """
     Utility function that computes topological properties of graphs created
-    with different thresholds of sigma.
+    at different thresholds of sigma.
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    min_sigma : float, default 0
+        the minimum value of sigma at which the topological statistics are computed.
+    max_sigma : float, default 1
+        the maximum value of sigma at which the topological statistics are computed.
+    step_size : float, default 0.01
+        increase sigma with step_size
     """
     statistics = []
     for sigma in np.arange(min_sigma + step_size, max_sigma + step_size, step_size):

@@ -9,18 +9,14 @@ import pandas as pd
 from sklearn.metrics import pairwise_distances
 
 
-def all_argmin(array, tol=0.001):
-    return np.where(np.abs(array - np.array([np.nanmin(array, axis=1)]).T) < tol)
-
-
 def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000, 
-                        metric="cosine", n_jobs=1, all_min=False):
+                        metric="cosine", n_jobs=1, all_min=False, tol=0.001):
     """
     Parameters
     ----------
     X : ndarray or sparse array, shape: (n_samples_X, n_features)
         Input data.
-    time_index : ndarray or pandas DatetimeIndex, shape: (n_samples_X), 
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
         Index corresponding to time points of each sample in X. If supplied,
         neighbors for each item x in X will only consist of samples that occur 
         before or at the time point corresponding with x. Default is None.
@@ -48,9 +44,7 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
     """
     n_samples, n_features = X.shape
     sample_size = int(n_features * sample_prop)
-    # neighbors = np.zeros((n_samples, n_samples), dtype=np.float64)
     neighbors = defaultdict(Counter)
-    # indices = np.arange(n_samples)
     progress = pyprind.ProgBar(n_iter)
     if time_index is not None:
         potential_neighbors = time_index <= time_index[np.newaxis].T        
@@ -60,13 +54,11 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
         dm = pairwise_distances(_X, metric=metric, n_jobs=n_jobs)
         np.fill_diagonal(dm, np.inf)
         if time_index is not None:
-            dm[~potential_neighbors] = np.nan # no fix yet for problem of first text
+            dm[~potential_neighbors] = np.nan # TODO: no fix yet for problem of single first text
         if all_min:
-            results = np.transpose(all_argmin(dm))
-            # neighbors[all_argmin(dm)] += 1
+            results = np.transpose(np.where(np.abs(dm - np.nanmin(dm, axis=1)[np.newaxis].T) < tol))
         else:
             results = enumerate(np.nanargmin(dm, axis=1))
-            # neighbors[indices, np.nanargmin(dm, axis=1)] += 1
         for source, target in results:
             neighbors[source][target] += 1
         progress.update()
@@ -74,14 +66,14 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
             for source, targets in neighbors.items()}
 
 
-def bootstrap_neighbors_sparse_batch(X, time_index, n_iter=1000, sample_prop=0.5, 
+def bootstrap_neighbors_sparse_batch(X, time_index, sample_prop=0.5, n_iter=1000, 
                                      metric="cosine", n_jobs=1, time_step=1):
     """
     Parameters
     ----------
     X : ndarray or sparse array, shape: (n_samples_X, n_features)
         Input data.
-    time_index : ndarray or pandas DatetimeIndex, shape: (n_samples_X), 
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
         Index corresponding to time points of each sample in X. If supplied,
         neighbors for each item x in X will only consist of samples that occur 
         before or at the time point corresponding with x. Default is None.
@@ -106,6 +98,9 @@ def bootstrap_neighbors_sparse_batch(X, time_index, n_iter=1000, sample_prop=0.5
         The number of jobs to use for the computation. This works by breaking
         down the pairwise matrix into n_jobs even slices and computing them in
         parallel.
+    time_step : integer, default 1
+        Size in years of chunks. Smaller is less memory, bigger may sometimes be faster, 
+        but not always ;-) 
     """
 
     if not isinstance(time_index, pd.DatetimeIndex):
@@ -147,7 +142,7 @@ def to_graph(choices, time_index=None, labels=None, sigma=0.5, only_best=False):
     ----------
     choices : ndarray, shape: (n_samples, n_samples)
         Proportion of assignments resulting from bootstrap_neighbors
-    time_index : ndarray or pandas DatetimeIndex, shape: (n_samples_X), 
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
         Index corresponding to time points of each sample in X. If supplied,
         neighbors for each item x in X will only consist of samples that occur 
         before or at the time point corresponding with x. Default is None.
@@ -183,7 +178,7 @@ def bootstrap_network(X, labels=None, time_index=None, sigma=0.5, sample_prop=0.
         Input data.
     labels : iterable of strings, shape: n_samples_X
         Labels corresponding to each sample in X
-    time_index : ndarray or pandas DatetimeIndex, shape: (n_samples_X), 
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
         Index corresponding to time points of each sample in X. If supplied,
         neighbors for each item x in X will only consist of samples that occur 
         before or at the time point corresponding with x. Default is None.
@@ -220,7 +215,7 @@ def bootstrap_network(X, labels=None, time_index=None, sigma=0.5, sample_prop=0.
 
 def evolving_graphs(choices, time_index, groupby=lambda x: x, sigma=0.5):
     """
-    Create a story network at various points in time, based on the groupby function.
+    Create a text network at various points in time, based on the groupby function.
     The function expects a time_index with Datetime objects. This allows you to group
     the graph on years, months or any other time frame you want. 
 
@@ -232,7 +227,7 @@ def evolving_graphs(choices, time_index, groupby=lambda x: x, sigma=0.5):
     ----------
     choices : ndarray, shape: (n_samples, n_samples)
         Proportion of assignments resulting from bootstrap_neighbors
-    time_index : ndarray or pandas DatetimeIndex, shape: (n_samples_X), 
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
         Index corresponding to time points of each sample in X. If supplied,
         neighbors for each item x in X will only consist of samples that occur 
         before or at the time point corresponding with x. Default is None.
