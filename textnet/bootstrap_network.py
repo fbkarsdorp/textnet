@@ -74,7 +74,7 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
             for source, targets in neighbors.items()}
 
 
-def bootstrap_neighbors_sparse_batch(X, time_index=None, n_iter=1000, sample_prop=0.5, 
+def bootstrap_neighbors_sparse_batch(X, time_index, n_iter=1000, sample_prop=0.5, 
                                      metric="cosine", n_jobs=1, time_step=1):
     """
     Parameters
