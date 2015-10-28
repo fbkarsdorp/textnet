@@ -1,3 +1,4 @@
+from collections import defaultdict, Counter
 from functools import partial
 
 import pyprind
@@ -61,9 +62,8 @@ def all_argmin(array, tol=0.001):
 
 
 def bootstrap_neighbors(X, time_index=None, sigma=0.5, sample_prop=0.5, 
-                        n_iter=1000, metric="cosine", return_dist=False, 
-                        n_jobs=1, all_min=False, grouped_pairwise=False,
-                        groupby=5):
+                        n_iter=1000, metric="cosine", n_jobs=1, all_min=False, 
+                        grouped_pairwise=False, groupby=5):
     """
     Parameters
     ----------
@@ -127,6 +127,39 @@ def bootstrap_neighbors(X, time_index=None, sigma=0.5, sample_prop=0.5,
         progress.update()
     neighbors /= n_iter
     return neighbors
+
+
+def bootstrap_neighbors_sparse_batch(X, time_index=None, n_iter=1000, sample_prop=0.5, metric="cosine", n_jobs=1):
+    if not isinstance(time_index, pd.DatetimeIndex):
+        time_index = pd.DatetimeIndex(time_index)
+
+    n_samples, n_features = X.shape
+    sample_size = int(n_features * sample_prop)
+    neighbors = defaultdict(Counter)
+
+    grouped_indices = time_index.year // 5 * 5
+    progress = pyprind.ProgBar(n_iter)
+
+    for iteration in range(n_iter):
+        rnd_features = np.random.randint(n_features, size=sample_size)
+        _X = X[:, rnd_features]    
+        for year in np.unique(grouped_indices):
+            chunk_y = np.where(grouped_indices <= year)[0]
+            chunk_x = np.where(grouped_indices == year)[0]
+            excluded_neighbors = time_index[chunk_y] > time_index[chunk_x][np.newaxis].T
+            x_min, x_max = chunk_x.min(), chunk_x.max() + 1
+            # compute pairwise distances
+            d_chunk = pairwise_distances(_X[chunk_x, :], Y=_X[chunk_y, :], metric=metric, n_jobs=n_jobs)
+            # set all items in d_chunk that refer to themselves to inf
+            d_chunk[np.arange(x_max - x_min), np.arange(x_min, x_max)] = np.inf
+            # next remove all unpotential neighbors from consideration
+            d_chunk[excluded_neighbors] = np.nan
+            # extract the argmin neighbor
+            for source, neighbor in zip(chunk_x, np.nanargmin(d_chunk, axis=1)):
+                neighbors[source][neighbor] += 1
+        progress.update()
+
+    return {source: {target: count / n_iter for target, count in targets.items()} for source, targets in neighbors.items()}
 
 
 def to_graph(choices, time_index=False, sigma=0.5, only_best=False):
