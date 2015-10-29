@@ -12,8 +12,10 @@ from .bootstrap_network import evolving_graphs, to_graph
 from .utils import nx2igraph
 
 
-def effective_diameter(G, q=90):
-    distance_matrix = np.array(G.shortest_paths(mode="ALL"), dtype=np.float64)
+def effective_diameter(G, mode="ALL", q=90):
+    if mode == 'OUT':
+        return np.percentile(G.eccentricity(), q=q)
+    distance_matrix = np.array(G.shortest_paths(mode=mode), dtype=np.float64)
     distance_matrix[distance_matrix == np.inf] = np.nan
     return np.percentile(np.nanmax(distance_matrix, axis=1), q)
 
@@ -38,10 +40,10 @@ def graph_statistics(graph, lower_degree_bounds=0):
     in_degree_distribution = np.array(graph.indegree())
     largest_component = max(map(len, graph.components(mode="WEAK"))) / len(graph.vs)
     return {
-        'n': len(graph.vs), 
-        'm': len(graph.es), 
-        'D': graph.diameter(directed=False), 
-        'ED': effective_diameter(graph, q=90),
+        'n': graph.vcount(), 
+        'm': graph.ecount(), 
+        'D': graph.diameter(directed=True),
+        "ED": effective_diameter(graph, mode="OUT", q=90),
         'APL': graph.average_path_length(directed=False), 
         'CC': graph.transitivity_undirected(), 
         'k': degree_distribution[degree_distribution > lower_degree_bounds].mean(),
