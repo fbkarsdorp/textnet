@@ -57,7 +57,7 @@ def graph_statistics(graph, lower_degree_bounds=0):
     }
 
 
-def fit_densification(statistics):
+def fit_densification(statistics, ax=None):
     """
     Fit densification of nodes and edges according to x ** alpha as described by
     Leskovec et al. (2007) Graph evolution. Densification and shrinking diameters
@@ -69,10 +69,9 @@ def fit_densification(statistics):
     def densification(x, alpha):
         return x ** alpha
     popt, pcov = curve_fit(densification, statistics.n, statistics.m)
-    print("alpha = %.3f" % popt[0])
-    sns.plt.plot(statistics.n, statistics.m, 'o', markeredgewidth=1, markeredgecolor='k', markerfacecolor='None')
-    sns.plt.plot(statistics.n, densification(statistics.n, *popt), '-k')
-    return r2_score(densification(statistics.n, *popt), statistics.m)
+    sns.plt.plot(statistics.n, statistics.m, 'o', markeredgewidth=1, markeredgecolor='k', markerfacecolor='None', ax=ax)
+    sns.plt.plot(statistics.n, densification(statistics.n, *popt), '-k', ax=ax)
+    return r2_score(densification(statistics.n, *popt), statistics.m), popt[0]
 
 
 def evolving_graph_statistics(choices, time_index, groupby=lambda x: x, sigma=0.5, lower_degree_bounds=0):
