@@ -10,7 +10,8 @@ from sklearn.metrics import pairwise_distances
 
 
 def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000, 
-                        metric="cosine", n_jobs=1, all_min=False, tol=0.001):
+                        metric="cosine", n_jobs=1, all_min=False, tol=0.001,
+                        seed=None):
     """
     Parameters
     ----------
@@ -46,10 +47,11 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
     sample_size = int(n_features * sample_prop)
     neighbors = {i: Counter() for i in range(n_samples)}
     progress = pyprind.ProgBar(n_iter)
+    rnd = np.random.RandomState(seed=seed)
     if time_index is not None:
         potential_neighbors = time_index <= time_index[np.newaxis].T        
     for iteration in range(n_iter):
-        rnd_features = np.random.randint(n_features, size=sample_size)
+        rnd_features = rnd.randint(n_features, size=sample_size)
         _X = X[:, rnd_features]
         dm = pairwise_distances(_X, metric=metric, n_jobs=n_jobs)
         np.fill_diagonal(dm, np.inf)
@@ -67,7 +69,7 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
 
 
 def bootstrap_neighbors_sparse_batch(X, time_index, sample_prop=0.5, n_iter=1000, 
-                                     metric="cosine", n_jobs=1, time_step=1):
+                                     metric="cosine", n_jobs=1, time_step=1, seed=None):
     """
     Parameters
     ----------
@@ -112,9 +114,9 @@ def bootstrap_neighbors_sparse_batch(X, time_index, sample_prop=0.5, n_iter=1000
 
     grouped_indices = time_index.year // time_step * time_step
     progress = pyprind.ProgBar(n_iter)
-
+    rnd = np.random.RandomState(seed=seed)
     for iteration in range(n_iter):
-        rnd_features = np.random.randint(n_features, size=sample_size)
+        rnd_features = rnd.randint(n_features, size=sample_size)
         _X = X[:, rnd_features]    
         for year in np.unique(grouped_indices):
             chunk_y = np.where(grouped_indices <= year)[0]

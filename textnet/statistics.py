@@ -12,6 +12,12 @@ from .bootstrap_network import evolving_graphs, to_graph
 from .utils import nx2igraph
 
 
+def effective_diameter(G, q=90):
+    distance_matrix = np.array(G.shortest_paths(mode="ALL"), dtype=np.float64)
+    distance_matrix[distance_matrix == np.inf] = np.nan
+    return np.percentile(np.nanmax(distance_matrix, axis=1), q)
+
+
 def graph_statistics(graph, lower_degree_bounds=0):
     """
     Function used to compute some topological properties of a graph.
@@ -35,7 +41,7 @@ def graph_statistics(graph, lower_degree_bounds=0):
         'n': len(graph.vs), 
         'm': len(graph.es), 
         'D': graph.diameter(directed=False), 
-        'ED': np.percentile(graph.eccentricity(), q=90),
+        'ED': effective_diameter(graph, q=90),
         'APL': graph.average_path_length(directed=False), 
         'CC': graph.transitivity_undirected(), 
         'k': degree_distribution[degree_distribution > lower_degree_bounds].mean(),
