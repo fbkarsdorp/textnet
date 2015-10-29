@@ -44,7 +44,7 @@ def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
     """
     n_samples, n_features = X.shape
     sample_size = int(n_features * sample_prop)
-    neighbors = defaultdict(Counter)
+    neighbors = {i: Counter() for i in range(n_samples)}
     progress = pyprind.ProgBar(n_iter)
     if time_index is not None:
         potential_neighbors = time_index <= time_index[np.newaxis].T        
@@ -108,7 +108,7 @@ def bootstrap_neighbors_sparse_batch(X, time_index, sample_prop=0.5, n_iter=1000
 
     n_samples, n_features = X.shape
     sample_size = int(n_features * sample_prop)
-    neighbors = defaultdict(Counter)
+    neighbors = {i: Counter() for i in range(n_samples)}
 
     grouped_indices = time_index.year // time_step * time_step
     progress = pyprind.ProgBar(n_iter)
