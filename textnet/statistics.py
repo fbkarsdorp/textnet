@@ -81,11 +81,12 @@ def fit_densification(statistics, ax=None):
     ----------
     statistics : output of graph_statistics
     """
+    plot = ax if ax is not None else sns.plt
     def densification(x, alpha):
         return x ** alpha
     popt, pcov = curve_fit(densification, statistics.n, statistics.m)
-    sns.plt.plot(statistics.n, statistics.m, 'o', markeredgewidth=1, markeredgecolor='k', markerfacecolor='None', ax=ax)
-    sns.plt.plot(statistics.n, densification(statistics.n, *popt), '-k', ax=ax)
+    plot.plot(statistics.n, statistics.m, 'o', markeredgewidth=1, markeredgecolor='k', markerfacecolor='None')
+    plot.plot(statistics.n, densification(statistics.n, *popt), '-k')
     return r2_score(densification(statistics.n, *popt), statistics.m), popt[0]
 
 
