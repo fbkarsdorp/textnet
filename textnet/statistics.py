@@ -57,15 +57,19 @@ def graph_statistics(graph, lower_degree_bounds=0):
     }
 
 
-def linear_attachment_score(neighbors, time_index, sigma=0.5, normalized=False):
+def linear_attachment_score(neighbors, time_index, sigma=0.5, normalized=True):
+    """Compute the linear attachment score for a threshold of sigma."""
     scores = []
+    t_min, t_max = time_index.min(), time_index.max()
+    if normalized:
+        normalizer = lambda t1, t2: 0 if t1 == t_min else (t1 - t2).days * (t_max - t_min).days / (t1 - t_min).days
+    else:
+        normalizer = lambda t1, t2: (t1 - t2).days
     for story_id, choices in neighbors.items():
-        time_diffs = []
-        for p, score in choices.items():
-            if score >= sigma:
-                time_diffs.append(time_index[story_id] - time_index[p])
-        scores.append(sum(time_diffs) / len(time_diffs))
-    return sum(scores) / len(scores)
+        time_diffs = [normalizer(time_index[story_id], time_index[p]) for p, s in choices.items() if s >= sigma]
+        if time_diffs:
+            scores.append(sum(time_diffs) / len(time_diffs))
+    return sum(scores) / len(scores) / float((t_max - t_min).days)
 
 
 def fit_densification(statistics, ax=None):
@@ -122,7 +126,7 @@ def evolving_graph_statistics(choices, time_index, groupby=lambda x: x, sigma=0.
     return statistics
 
 
-def eval_sigmas(neighbors, min_sigma=0, max_sigma=1, step_size=0.01):
+def eval_sigmas(neighbors, time_index, min_sigma=0, max_sigma=1, step_size=0.01):
     """
     Utility function that computes topological properties of graphs created
     at different thresholds of sigma.
@@ -130,6 +134,10 @@ def eval_sigmas(neighbors, min_sigma=0, max_sigma=1, step_size=0.01):
     Parameters
     ----------
     neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
+        Index corresponding to time points of each sample in X. If supplied,
+        neighbors for each item x in X will only consist of samples that occur 
+        before or at the time point corresponding with x. Default is None.    
     min_sigma : float, default 0
         the minimum value of sigma at which the topological statistics are computed.
     max_sigma : float, default 1
@@ -142,6 +150,7 @@ def eval_sigmas(neighbors, min_sigma=0, max_sigma=1, step_size=0.01):
         G = to_graph(neighbors, sigma=sigma)
         stats = graph_statistics(G)
         stats['sigma'] = sigma
+        stats['la'] = linear_attachment_score(neighbors, time_index, sigma=sigma)
         statistics.append(stats)
     return pd.DataFrame(statistics).set_index('sigma')    
 
