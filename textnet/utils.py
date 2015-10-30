@@ -1,3 +1,4 @@
+from collections import defaultdict
 import networkx as nx
 import igraph
 
@@ -12,3 +13,8 @@ def nx2igraph(nx_G):
     iG.add_vertices(nx_G.nodes())
     iG.add_edges(nx_G.edges())
     return iG
+
+def node_counter():
+    counter = defaultdict()
+    counter.default_factory = lambda: len(counter)
+    return counter

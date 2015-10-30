@@ -1,4 +1,4 @@
-from collections import defaultdict, Counter
+from collections import Counter
 
 import pyprind
 
@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.metrics import pairwise_distances
+from .utils import node_counter
 
 
 def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000, 
@@ -157,17 +158,17 @@ def to_graph(choices, time_index=None, labels=None, sigma=0.5, only_best=False):
     """
     labels = np.arange(len(choices)) if labels is None else labels
     G = nx.DiGraph()
+    _nodes = node_counter()
     for source, neighbors in sorted(choices.items()):
-        G.add_node(source, name=labels[source], date=time_index[source] if time_index is not None else None)
+        G.add_node(_nodes[source], name=labels[source], date=time_index[source] if time_index is not None else None)
         if only_best:
             best = max(neighbors, key=neighbors.__getitem__)
             neighbors = [best] if neighbors[best] >= sigma else []
         else:
             neighbors = [neighbor for neighbor, score in neighbors.items() if score >= sigma]
-        if len(neighbors) > 0:
-            for neighbor in neighbors:
-                G.add_node(neighbor, name=labels[neighbor], date=time_index[neighbor] if time_index is not None else None)
-                G.add_edge(source, neighbor)
+        for neighbor in neighbors:
+            G.add_node(_nodes[neighbor], name=labels[neighbor], date=time_index[neighbor] if time_index is not None else None)
+            G.add_edge(_nodes[source], _nodes[neighbor])
     return G
 
 
@@ -241,13 +242,12 @@ def evolving_graphs(choices, time_index, groupby=lambda x: x, sigma=0.5):
     """
     index_series = pd.Series(sorted(choices.keys()), index=time_index)
     G = nx.DiGraph()
+    _nodes = node_counter()
     for group_id, story_ids in index_series.groupby(groupby):
         for story_id in story_ids:
+            G.add_node(_nodes[story_id], name=story_id, date=time_index[story_id])
             neighbors = [neighbor for neighbor, score in choices[story_id].items() if score >= sigma]
-            G.add_node(story_id, date=time_index[story_id])
-            if len(neighbors) > 0:
-                for neighbor in neighbors:
-                    G.add_node(neighbor, date=time_index[neighbor])
-                    G.add_edge(story_id, neighbor)
+            for neighbor in neighbors:
+                G.add_node(_nodes[neighbor], name=neighbor, date=time_index[neighbor])
+                G.add_edge(_nodes[story_id], _nodes[neighbor])
         yield group_id, G
-

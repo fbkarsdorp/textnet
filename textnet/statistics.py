@@ -57,6 +57,17 @@ def graph_statistics(graph, lower_degree_bounds=0):
     }
 
 
+def linear_attachment_score(neighbors, time_index, sigma=0.5, normalized=False):
+    scores = []
+    for story_id, choices in neighbors.items():
+        time_diffs = []
+        for p, score in choices.items():
+            if score >= sigma:
+                time_diffs.append(time_index[story_id] - time_index[p])
+        scores.append(sum(time_diffs) / len(time_diffs))
+    return sum(scores) / len(scores)
+
+
 def fit_densification(statistics, ax=None):
     """
     Fit densification of nodes and edges according to x ** alpha as described by
