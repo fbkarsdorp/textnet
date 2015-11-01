@@ -63,7 +63,7 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     groupby : callable
         Function specifying the time steps at which the graphs should be created   
     """ 
-    return deque(randomized_dynamic_time_graph(neighbors, time_index, m=m, groupby=groupby))[0][1]
+    return deque(randomized_dynamic_time_graph(neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
 def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x): 
