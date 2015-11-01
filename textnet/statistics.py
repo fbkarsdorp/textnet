@@ -79,7 +79,7 @@ def fit_densification(statistics, ax=None):
 
     Parameters
     ----------
-    statistics : output of graph_statistics
+    statistics : output of textnet.statistics.graph_statistics
     """
     plot = ax if ax is not None else sns.plt
     def densification(x, alpha):
