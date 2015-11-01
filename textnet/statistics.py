@@ -8,7 +8,7 @@ import seaborn as sns
 from sklearn.metrics import r2_score
 from scipy.optimize import curve_fit
 
-from .bootstrap_network import evolving_graphs, to_graph
+from .network import evolving_graphs, to_graph
 from .utils import nx2igraph
 
 
