@@ -47,7 +47,7 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
         yield stats.index[i], G
 
 
-def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x, sigma=0.5): 
+def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x): 
     """
     Returns a generator of random graphs at each time step t according to the Erdős-Rényi
     graph model. Possible edges are defined by the time steps and probability p.
@@ -63,9 +63,6 @@ def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x,
         probability of creating an edge.
     groupby : callable
         Function specifying the time steps at which the graphs should be created
-    sigma : float, default 0.5
-        The threshold percentage of how often a data point must be 
-        assigned as nearest neighbor.     
     """
     index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
     G = nx.DiGraph()
@@ -74,7 +71,7 @@ def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x,
     for group_id, story_ids in index_series.groupby(groupby):
         for story_id in story_ids:
             G.add_node(_nodes[story_id], name=story_id, date=time_index[story_id])
-            neighbors, _ = np.where(potential_neighbors[story_id])
+            neighbors = np.where(potential_neighbors[story_id])[0]
             for neighbor in neighbors:
                 if random.random() < p:
                     G.add_node(_nodes[neighbor], name=neighbor, date=time_index[neighbor])
