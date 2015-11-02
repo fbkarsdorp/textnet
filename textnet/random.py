@@ -115,3 +115,34 @@ def gnp_random_time_graph(neighbors, time_index, p, groupby=lambda x: x):
         Function specifying the time steps at which the graphs should be created
     """
     return deque(gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=groupby), maxlen=1)[0][1]
+
+
+def time_decay_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x): 
+    """
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    p : float
+        probability of creating an edge.
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    """
+    index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
+    G = nx.DiGraph()
+    potential_neighbors = time_index <= time_index[np.newaxis].T
+    _nodes = node_counter()
+    for group_id, story_ids in index_series.groupby(groupby):
+        for story_id in story_ids:
+            G.add_node(_nodes[story_id], name=story_id, date=time_index[story_id])
+            neighbors = np.where(potential_neighbors[story_id])[0]
+            p_dist = neighbors
+            for i, neighbor in enumerate(neighbors):
+                if p_dist[i] < p:
+                    G.add_node(_nodes[neighbor], name=neighbor, date=time_index[neighbor])
+                    G.add_edge(_nodes[story_id], _nodes[neighbor])
+        yield group_id, G
