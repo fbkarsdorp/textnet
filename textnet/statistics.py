@@ -61,12 +61,16 @@ def linear_attachment_score(neighbors, time_index, sigma=0.5, normalized=True):
     """Compute the linear attachment score for a threshold of sigma."""
     scores = []
     t_min, t_max = time_index.min(), time_index.max()
-    if normalized:
-        normalizer = lambda t1, t2: 0 if t1 == t_min else (t1 - t2).days * (t_max - t_min).days / (t1 - t_min).days
-    else:
+
+    def normalizer(t1, t2):
+        return (t1 - t2).days * (t_max - t_min).days / (t1 - t_min).days
+
+    if not normalized:
         normalizer = lambda t1, t2: (t1 - t2).days
+
     for story_id, choices in neighbors.items():
-        time_diffs = [normalizer(time_index[story_id], time_index[p]) for p, s in choices.items() if s >= sigma]
+        time_diffs = [normalizer(time_index[story_id], time_index[p]) 
+                      for p, s in choices.items() if s >= sigma]
         if time_diffs:
             scores.append(sum(time_diffs) / len(time_diffs))
     return sum(scores) / len(scores) / float((t_max - t_min).days)
@@ -85,12 +89,14 @@ def fit_densification(statistics, ax=None):
     def densification(x, alpha):
         return x ** alpha
     popt, pcov = curve_fit(densification, statistics.n, statistics.m)
-    plot.plot(statistics.n, statistics.m, 'o', markeredgewidth=1, markeredgecolor='k', markerfacecolor='None')
+    plot.plot(statistics.n, statistics.m, 'o', 
+              markeredgewidth=1, markeredgecolor='k', markerfacecolor='None')
     plot.plot(statistics.n, densification(statistics.n, *popt), '-k')
     return r2_score(densification(statistics.n, *popt), statistics.m), popt[0]
 
 
-def evolving_graph_statistics(choices, time_index, groupby=lambda x: x, sigma=0.5, lower_degree_bounds=0):
+def evolving_graph_statistics(choices, time_index, groupby=lambda x: x, 
+                              sigma=0.5, lower_degree_bounds=0):
     """
     Utility function to compute the topological properties of graphs created 
     at different points in time. The function expects a time_index with Timestamp 

@@ -10,7 +10,7 @@ from sklearn.metrics import pairwise_distances
 from .utils import node_counter
 
 
-def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000, 
+def bootstrap_neighbors(X, time_index=None, sample_prop=0.5, n_iter=1000,
                         metric="cosine", n_jobs=1, all_min=False, tol=0.001,
                         seed=None):
     """
@@ -125,7 +125,8 @@ def bootstrap_neighbors_sparse_batch(X, time_index, sample_prop=0.5, n_iter=1000
             excluded_neighbors = time_index[chunk_y] > time_index[chunk_x][np.newaxis].T
             x_min, x_max = chunk_x.min(), chunk_x.max() + 1
             # compute pairwise distances
-            d_chunk = pairwise_distances(_X[chunk_x, :], Y=_X[chunk_y, :], metric=metric, n_jobs=n_jobs)
+            d_chunk = pairwise_distances(_X[chunk_x, :], Y=_X[chunk_y, :], 
+                                         metric=metric, n_jobs=n_jobs)
             # set all items in d_chunk that refer to themselves to inf
             d_chunk[np.arange(x_max - x_min), np.arange(x_min, x_max)] = np.inf
             # next remove all unpotential neighbors from consideration
@@ -160,14 +161,16 @@ def to_graph(choices, time_index=None, labels=None, sigma=0.5, only_best=False):
     G = nx.DiGraph()
     _nodes = node_counter()
     for source, neighbors in sorted(choices.items()):
-        G.add_node(_nodes[source], name=labels[source], date=time_index[source] if time_index is not None else None)
+        G.add_node(_nodes[source], name=labels[source], 
+                   date=time_index[source] if time_index is not None else None)
         if only_best:
             best = max(neighbors, key=neighbors.__getitem__)
             neighbors = [best] if neighbors[best] >= sigma else []
         else:
             neighbors = [neighbor for neighbor, score in neighbors.items() if score >= sigma]
         for neighbor in neighbors:
-            G.add_node(_nodes[neighbor], name=labels[neighbor], date=time_index[neighbor] if time_index is not None else None)
+            G.add_node(_nodes[neighbor], name=labels[neighbor], 
+                       date=time_index[neighbor] if time_index is not None else None)
             G.add_edge(_nodes[source], _nodes[neighbor])
     return G
 
@@ -213,7 +216,8 @@ def bootstrap_network(X, labels=None, time_index=None, sigma=0.5, sample_prop=0.
     if len(set(labels)) != X.shape[0]:
         raise ValueError("Number of unique labels should be equal to number of data points.")
     labels = np.arange(X.shape[0]) if labels is None else labels
-    return to_graph(neighbors, time_index=time_index, labels=labels, sigma=sigma, only_best=only_best)    
+    return to_graph(neighbors, time_index=time_index, labels=labels, 
+                    sigma=sigma, only_best=only_best)    
 
 
 def evolving_graphs(choices, time_index, groupby=lambda x: x, sigma=0.5):
