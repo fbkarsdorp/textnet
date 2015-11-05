@@ -63,7 +63,7 @@ def linear_attachment_score(neighbors, time_index, sigma=0.5, normalized=True):
     t_min, t_max = time_index.min(), time_index.max()
 
     def normalizer(t1, t2):
-        if t1 - t_min == 0:
+        if (t1 - t_min).days == 0:
             return 0
         return (t1 - t2).days * (t_max - t_min).days / (t1 - t_min).days
 
