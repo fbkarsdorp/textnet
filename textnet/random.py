@@ -31,13 +31,13 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
     stats = evolving_graph_statistics(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
     # create an empty graph with the nodes at the first time step 
-    G.add_nodes_from(range(stats.n[0]))
+    G.add_nodes_from(range(stats.n.ix[0]))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
-    repeated_nodes[range(stats.n[0])] = 1
+    repeated_nodes[range(stats.n.ix[0])] = 1
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
         p_vals = repeated_nodes / repeated_nodes.sum()
-        for j in range(len(G), stats.n[i]):
+        for j in range(len(G), stats.n.ix[i]):
             # sample m target nodes without replacement for j
             targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
             G.add_edges_from(zip([j] * m, targets))
