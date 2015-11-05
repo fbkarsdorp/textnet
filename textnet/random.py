@@ -86,12 +86,12 @@ def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x)
     """
     index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
     G = nx.DiGraph()
-    potential_neighbors = time_index <= time_index[np.newaxis].T
+    # potential_neighbors = time_index <= time_index[np.newaxis].T
     _nodes = node_counter()
     for group_id, story_ids in index_series.groupby(groupby):
         for story_id in story_ids:
             G.add_node(_nodes[story_id], name=story_id, date=time_index[story_id])
-            neighbors = np.where(potential_neighbors[story_id])[0]
+            neighbors = np.where(time_index[story_id] <= time_index)[0]
             for neighbor in neighbors:
                 if random.random() < p:
                     G.add_node(_nodes[neighbor], name=neighbor, date=time_index[neighbor])
