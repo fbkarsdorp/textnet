@@ -67,7 +67,7 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
-def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x): 
+def gnp_random_dynamic_time_graph(neighbors, time_index, p=0.3, groupby=lambda x: x): 
     """
     Returns a generator of random graphs at each time step t according to the Erdős-Rényi
     graph model. Possible edges are defined by the time steps and probability p.
@@ -79,28 +79,25 @@ def gnp_random_dynamic_time_graph(neighbors, time_index, p, groupby=lambda x: x)
         Index corresponding to time points of each sample in G. If supplied,
         neighbors for each node n in G will only consist of samples that occur 
         before or at the time point corresponding with x.
-    p : float
+    p : float, default 0.3
         probability of creating an edge.
     groupby : callable
         Function specifying the time steps at which the graphs should be created
     """
     index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
     G = nx.DiGraph()
-    # potential_neighbors = time_index <= time_index[np.newaxis].T
     _nodes = node_counter()
     for group_id, story_ids in index_series.groupby(groupby):
         for story_id in story_ids:
             G.add_node(_nodes[story_id])
             neighbors = np.where(time_index[story_id] <= time_index)[0]
             ps = np.random.rand(neighbors.shape[0]) < p
-            for i, neighbor in enumerate(neighbors):
-                if ps[i]:
-                    G.add_node(_nodes[neighbor])
-                    G.add_edge(_nodes[story_id], _nodes[neighbor])
+            for i, neighbor in enumerate(neighbors[ps]):
+                G.add_edge(_nodes[story_id], _nodes[neighbor])
         yield group_id, G
 
 
-def gnp_random_time_graph(neighbors, time_index, p, groupby=lambda x: x):
+def gnp_random_time_graph(neighbors, time_index, p=0.3, groupby=lambda x: x):
     """
     Returns a random graph based on the empirical data according to the Erdős-Rényi
     graph model. Possible edges are defined by the time steps and probability p.
@@ -112,7 +109,7 @@ def gnp_random_time_graph(neighbors, time_index, p, groupby=lambda x: x):
         Index corresponding to time points of each sample in G. If supplied,
         neighbors for each node n in G will only consist of samples that occur 
         before or at the time point corresponding with x.
-    p : float
+    p : float, default 0.3
         probability of creating an edge.
     groupby : callable
         Function specifying the time steps at which the graphs should be created
