@@ -235,6 +235,10 @@ def small_world_index(neighbors, time_index, sigma=0.5):
         swi = ---------
               L_e / L_r
 
+    where C is the clustering coefficient of the empirical and random network 
+    and L represents the average path length in both networks. swi >= 1 indicates
+    a small world network.
+
     Parameters
     ----------
     neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
