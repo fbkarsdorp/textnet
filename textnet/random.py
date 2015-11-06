@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .statistics import evolving_graph_statistics
-from .utils import node_counter
+from .utils import node_counter, nx2igraph
 
 
 def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
@@ -224,3 +224,34 @@ def rewired_time_graph(neighbors, time_index, sigma=0.5, groupby=lambda x: x):
     """     
     return deque(rewire_dynamic_time_graph(
         neighbors, time_index, sigma=sigma, groupby=groupby), maxlen=1)[0][1]
+
+
+def small_world_index(neighbors, time_index, sigma=0.5):
+    """
+    Compute the small-worldness index as introduced by Humphries et al. which
+    is defined as
+
+              C_e / C_r
+        swi = ---------
+              L_e / L_r
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
+        Index corresponding to time points of each sample in X. If supplied,
+        neighbors for each item x in X will only consist of samples that occur 
+        before or at the time point corresponding with x. Default is None.
+    sigma : float, default 0.5
+        The threshold percentage of how often a data point must be 
+        assigned as nearest neighbor.    
+    """
+    G_r = nx2igraph(rewired_time_graph(neighbors, time_index, sigma=sigma))
+    G_e = nx2igraph(to_graph(neighbors, time_index, sigma=sigma))
+    # emprical APL and clustering coefficient
+    L_e = G_e.average_path_length(directed=False)
+    C_e = G_e.transitivity_undirected()
+    # random APL and clustering coeeficient
+    L_r = G_r.average_path_length(directed=False)
+    C_r = G_r.transitivity_undirected()
+    return (C_e / C_r) / (L_e / L_r)  

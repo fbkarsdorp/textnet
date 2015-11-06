@@ -10,7 +10,6 @@ from scipy.optimize import curve_fit
 
 from .network import evolving_graphs, to_graph
 from .utils import nx2igraph
-from .random import rewired_time_graph
 
 
 def effective_diameter(G, mode="ALL", q=90):
@@ -19,37 +18,6 @@ def effective_diameter(G, mode="ALL", q=90):
     distance_matrix = np.array(G.shortest_paths(mode=mode), dtype=np.float64)
     distance_matrix[distance_matrix == np.inf] = np.nan
     return np.percentile(np.nanmax(distance_matrix, axis=1), q)
-
-
-def small_world_index(neighbors, time_index, sigma=0.5):
-    """
-    Compute the small-worldness index as introduced by Humphries et al. which
-    is defined as
-
-              C_e / C_r
-        swi = ---------
-              L_e / L_r
-
-    Parameters
-    ----------
-    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
-    time_index : ndarray of Timestamps or pandas DatetimeIndex, shape: (n_samples_X), 
-        Index corresponding to time points of each sample in X. If supplied,
-        neighbors for each item x in X will only consist of samples that occur 
-        before or at the time point corresponding with x. Default is None.
-    sigma : float, default 0.5
-        The threshold percentage of how often a data point must be 
-        assigned as nearest neighbor.    
-    """
-    G_r = nx2igraph(rewired_time_graph(neighbors, time_index, sigma=sigma))
-    G_e = nx2igraph(to_graph(neighbors, time_index, sigma=sigma))
-    # emprical APL and clustering coefficient
-    L_e = G_e.average_path_length(directed=False)
-    C_e = G_e.transitivity_undirected()
-    # random APL and clustering coeeficient
-    L_r = G_r.average_path_length(directed=False)
-    C_r = G_r.transitivity_undirected()
-    return (C_e / C_r) / (L_e / L_r)    
 
 
 def graph_statistics(graph, lower_degree_bounds=0):
