@@ -92,8 +92,9 @@ def gnp_random_dynamic_time_graph(neighbors, time_index, p=0.3, groupby=lambda x
             G.add_node(_nodes[story_id])
             neighbors = np.where(time_index[story_id] <= time_index)[0]
             ps = np.random.rand(neighbors.shape[0]) < p
-            for i, neighbor in enumerate(neighbors[ps]):
-                G.add_edge(_nodes[story_id], _nodes[neighbor])
+            for neighbor in neighbors[ps]:
+                if not neighbor == story_id:
+                    G.add_edge(_nodes[story_id], _nodes[neighbor])
         yield group_id, G
 
 
