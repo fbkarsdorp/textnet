@@ -116,3 +116,111 @@ def gnp_random_time_graph(neighbors, time_index, p=0.3, groupby=lambda x: x):
     """
     return deque(gnp_random_dynamic_time_graph(
         neighbors, time_index, p, groupby=groupby), maxlen=1)[0][1]
+
+
+def uniform_random_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: x): 
+    """
+    Returns a generator of random graphs at each time step t where for each story m
+    edges are created at random.
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    m : integer, default 1
+        number of edges per node.
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    """
+    index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
+    G = nx.DiGraph()
+    _nodes = node_counter()
+    for group_id, story_ids in index_series.groupby(groupby):
+        for story_id in story_ids:
+            G.add_node(_nodes[story_id])
+            neighbors = np.where(time_index[story_id] <= time_index)[0]
+            for neighbor in np.random.choice(neighbors, size=m):
+                if not neighbor == story_id:
+                    G.add_edge(_nodes[story_id], _nodes[neighbor])
+        yield group_id, G
+
+
+def uniform_random_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+    """
+    Returns a random graph based on the empirical data according to the Erdős-Rényi
+    graph model. Possible edges are defined by the time steps and probability p.
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    m : integer, default 1
+        number of edges per node.
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    """
+    return deque(uniform_random_dynamic_time_graph(
+        neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
+
+
+def rewire_dynamic_time_graph(neighbors, time_index, sigma=0.5, groupby=lambda x: x):
+    """
+    Returns a generator of random graphs. Each graph follows the development of the empirical
+    graph with respect to the number of nodes per time step and the number of edges created 
+    for each node. Edges, however, are randomly formed between nodes and potential neighbors.
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    sigma : float, default 0.5
+        The threshold percentage of how often a data point must be 
+        assigned as nearest neighbor.  
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created                  
+    """
+    index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
+    G = nx.DiGraph()
+    _nodes = node_counter()
+    for group_id, story_ids in index_series.groupby(groupby):
+        for story_id in story_ids:
+            G.add_node(_nodes[story_id])
+            n_neighbors = sum(score >= sigma for score in neighbors[story_id].values())
+            neighbors = np.where(time_index[story_id] <= time_index)[0]
+            if n_neighbors > 0:
+                neighbors = np.random.choice(neighbors, replace=False, size=n_neighbors)
+                for neighbor in neighbors:
+                    G.add_edge(_nodes[story_id], _nodes[neighbor])
+        yield group_id, G
+
+
+def rewired_time_graph(neighbors, time_index, sigma=0.5, groupby=lambda x: x):
+    """
+    Returns a rewired graph based on the development of the empirical graph with respect 
+    to the number of nodes per time step and the number of edges created for each node. 
+    Edges, however, are randomly formed between nodes and potential neighbors.
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    sigma : float, default 0.5
+        The threshold percentage of how often a data point must be 
+        assigned as nearest neighbor.  
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created.
+    """     
+    return deque(rewire_dynamic_time_graph(
+        neighbors, time_index, sigma=sigma, groupby=groupby), maxlen=1)[0][1]
