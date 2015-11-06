@@ -169,7 +169,7 @@ def uniform_random_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
-def rewire_dynamic_time_graph(neighbors, time_index, sigma=0.5, groupby=lambda x: x):
+def rewire_dynamic_time_graph(choices, time_index, sigma=0.5, groupby=lambda x: x):
     """
     Returns a generator of random graphs. Each graph follows the development of the empirical
     graph with respect to the number of nodes per time step and the number of edges created 
@@ -177,7 +177,7 @@ def rewire_dynamic_time_graph(neighbors, time_index, sigma=0.5, groupby=lambda x
 
     Parameters
     ----------
-    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    choices : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
     time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
         Index corresponding to time points of each sample in G. If supplied,
         neighbors for each node n in G will only consist of samples that occur 
@@ -188,13 +188,13 @@ def rewire_dynamic_time_graph(neighbors, time_index, sigma=0.5, groupby=lambda x
     groupby : callable
         Function specifying the time steps at which the graphs should be created                  
     """
-    index_series = pd.Series(sorted(neighbors.keys()), index=time_index)
+    index_series = pd.Series(sorted(choices.keys()), index=time_index)
     G = nx.DiGraph()
     _nodes = node_counter()
     for group_id, story_ids in index_series.groupby(groupby):
         for story_id in story_ids:
             G.add_node(_nodes[story_id])
-            n_neighbors = sum(score >= sigma for score in neighbors[story_id].values())
+            n_neighbors = sum(score >= sigma for score in choices[story_id].values())
             neighbors = np.where(time_index[story_id] <= time_index)[0]
             if n_neighbors > 0:
                 neighbors = np.random.choice(neighbors, replace=False, size=n_neighbors)
