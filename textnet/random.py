@@ -8,6 +8,7 @@ import pandas as pd
 
 from .statistics import evolving_graph_statistics
 from .utils import node_counter, nx2igraph
+from .network import to_graph
 
 
 def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
