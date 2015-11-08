@@ -256,7 +256,7 @@ def small_world_index(neighbors, time_index, sigma=0.5):
     # emprical APL and clustering coefficient
     L_e = G_e.average_path_length(directed=False)
     C_e = G_e.transitivity_undirected()
-    # random APL and clustering coeeficient
+    # random APL and clustering coefficient
     L_r = G_r.average_path_length(directed=False)
     C_r = G_r.transitivity_undirected()
     return (C_e / (C_r + 1e-10)) / (L_e / (L_r + 1e-10))
