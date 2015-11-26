@@ -45,7 +45,7 @@ def graph_statistics(graph, lower_degree_bounds=0):
         'D': graph.diameter(directed=True),
         "ED": effective_diameter(graph, mode="OUT", q=90),
         'APL': graph.average_path_length(directed=False), 
-        'CC': graph.transitivity_undirected(), 
+        'CC': graph.transitivity_avglocal_undirected(), 
         'k': degree_distribution[degree_distribution > lower_degree_bounds].mean(),
         'k_var': degree_distribution.var(), 
         'k_in': in_degree_distribution[in_degree_distribution > lower_degree_bounds].mean(), 
