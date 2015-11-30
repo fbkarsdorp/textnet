@@ -100,7 +100,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         vals = repeated_nodes * weights
         p_vals = vals / vals.sum()
         for j in range(len(G), stats.n.iat[i]):
-            G.add_node(j, date=stats.n.iat[i])
+            G.add_node(j, date=stats.index[i])
             # sample m target nodes without replacement for j
             targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
             G.add_edges_from(zip([j] * m, targets))
