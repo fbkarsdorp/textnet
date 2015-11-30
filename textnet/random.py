@@ -67,7 +67,7 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
-def chronological_attachment_model(neighbors, time_index, m=1, groupby=lambda x: x):
+def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
     """
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -93,7 +93,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, groupby=lambda x:
     all_nodes = np.arange(stats.n.max())
     time_steps = [t.year for t in time_index.order()]
     for i in range(1, stats.shape[0]):
-        weights = np.exp(- 0.1 * (stats.index[i] - time_steps))
+        weights = np.exp(- gamma * (stats.index[i] - time_steps))
         weights[time_steps > stats.index[i]] = 0
         vals = repeated_nodes * weights
         p_vals = vals / vals.sum()
