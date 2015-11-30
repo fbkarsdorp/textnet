@@ -91,7 +91,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, groupby=lambda x:
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
-    time_steps = np.array(sum([stats.index[i]] * stats.n.iat[i] for i in range(stats.shape[0])))
+    time_steps = np.array(sum([stats.index[i]] * stats.n.iat[i] for i in range(stats.shape[0]), []))
     for i in range(1, stats.shape[0]):
         weights = np.exp(- 0.1 * (stats.index[i] - time_steps))
         weights[time_steps > stats.index[i]] = 0
