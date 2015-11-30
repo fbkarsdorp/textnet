@@ -67,6 +67,45 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
+def chronological_attachment_model(neighbors, time_index, m=1, groupby=lambda x: x):
+    """
+    Returns a generator of random graphs at each time step t in time_index 
+    according to the Barabási–Albert preferential attachment model. 
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    m : int, default 1
+        Number of edges to attach from a new node to existing nodes
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    """
+    stats = evolving_graph_statistics(neighbors, time_index, groupby=groupby).sort_index()
+    G = nx.DiGraph()
+    # create an empty graph with the nodes at the first time step 
+    G.add_nodes_from(range(stats.n.iat[0]))
+    repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
+    repeated_nodes[range(stats.n.iat[0])] = 1
+    all_nodes = np.arange(stats.n.max())
+    time_steps = np.array(sum([stats.index[i]] * stats.n.iat[i] for i in range(stats.shape[0])))
+    for i in range(1, stats.shape[0]):
+        weights = np.exp(- 0.1 * (stats.index[i] - time_steps))
+        weights[time_steps > stats.index[i]] = 0
+        vals = repeated_nodes * weights
+        p_vals = vals / vals.sum()
+        for j in range(len(G), stats.n.iat[i]):
+            # sample m target nodes without replacement for j
+            targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+            G.add_edges_from(zip([j] * m, targets))
+            repeated_nodes[targets] += 1
+            repeated_nodes[j] += m
+        yield stats.index[i], G
+
+
 def gnp_random_dynamic_time_graph(neighbors, time_index, p=0.3, groupby=lambda x: x): 
     """
     Returns a generator of random graphs at each time step t according to the Erdős-Rényi
