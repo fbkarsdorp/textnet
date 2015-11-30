@@ -86,8 +86,10 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     """
     stats = evolving_graph_statistics(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
-    # create an empty graph with the nodes at the first time step 
-    G.add_nodes_from(range(stats.n.iat[0]))
+    # create an empty graph with the nodes at the first time step
+    for i in range(stats.n.iat[0]):
+        G.add_node(i, date=stats.index[i])
+    # G.add_nodes_from(range(stats.n.iat[0]))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
@@ -98,6 +100,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         vals = repeated_nodes * weights
         p_vals = vals / vals.sum()
         for j in range(len(G), stats.n.iat[i]):
+            G.add_node(j, date=stats.n.iat[i])
             # sample m target nodes without replacement for j
             targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
             G.add_edges_from(zip([j] * m, targets))
