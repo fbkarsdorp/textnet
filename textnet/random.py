@@ -11,7 +11,7 @@ from .utils import node_counter, nx2igraph
 from .network import to_graph
 
 
-def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+def randomized_dynamic_time_graph(neighbors, time_index, groupby=lambda x: x):
     """
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -37,12 +37,17 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
         p_vals = repeated_nodes / repeated_nodes.sum()
-        for j in range(len(G), stats.n.iat[i]):
-            # sample m target nodes without replacement for j
-            targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-            G.add_edges_from(zip([j] * m, targets))
-            repeated_nodes[targets] += 1
-            repeated_nodes[j] += m
+        new_nodes = np.arange(len(G), stats.n.iat[i])
+        targets = np.random.choice(all_nodes, size=new_nodes.shape[0], p=p_vals)
+        G.add_edges_from((k, targets[i]) for j in new_nodes)
+        repeated_nodes[targets] += 1
+        repeated_nodes[new_nodes] += 1
+        # for j in range(len(G), stats.n.iat[i]):
+        #     # sample m target nodes without replacement for j
+        #     targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+        #     G.add_edges_from(zip([j] * m, targets))
+        #     repeated_nodes[targets] += 1
+        #     repeated_nodes[j] += m
         yield stats.index[i], G
 
 
@@ -88,7 +93,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     G = nx.DiGraph()
     # create an empty graph with the nodes at the first time step
     for i in range(stats.n.iat[0]):
-        G.add_node(i, date=stats.index[i])
+        G.add_node(i, date=stats.index[0])
     # G.add_nodes_from(range(stats.n.iat[0]))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     repeated_nodes[range(stats.n.iat[0])] = 1
