@@ -37,7 +37,6 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
     repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
-        # new_nodes = np.arange(len(G), stats.n.iat[i])
         new_nodes = np.arange(len(G), stats.n.iat[i])
         repeated_nodes[new_nodes] += m
         for new_node in new_nodes:
@@ -46,18 +45,6 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
             G.add_node(new_node, date=stats.index[i])
             G.add_edges_from(zip([new_node] * m, targets))
             repeated_nodes[targets] += 1
-            # repeated_nodes[new_node] += m
-        # for new_node, target in zip(new_nodes, targets):
-        #     G.add_node(new_node, date=stats.index[i])
-        #     G.add_edge(new_node, target)
-        #     repeated_nodes[target] += 1
-        #     repeated_nodes[new_node] += 1
-        # for j in range(len(G), stats.n.iat[i]):
-        #     # sample m target nodes without replacement for j
-        #     targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-        #     G.add_edges_from(zip([j] * m, targets))
-        #     repeated_nodes[targets] += 1
-        #     repeated_nodes[j] += m
         yield stats.index[i], G
 
 
@@ -121,19 +108,6 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
             G.add_node(new_node, date=stats.index[i])
             G.add_edges_from(zip([new_node] * m, targets))
             repeated_nodes[targets] += 1
-            # repeated_nodes[new_node] += m            
-        # for new_node, target in zip(new_nodes, targets):
-        #     G.add_node(new_node, date=stats.index[i])
-        #     G.add_edge(new_node, target)
-        #     repeated_nodes[target] += 1
-        #     repeated_nodes[new_node] += 1
-        # for j in range(len(G), stats.n.iat[i]):
-        #     G.add_node(j, date=stats.index[i])
-        #     # sample m target nodes without replacement for j
-        #     targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-        #     G.add_edges_from(zip([j] * m, targets))
-        #     repeated_nodes[targets] += 1
-        #     repeated_nodes[j] += m
         yield stats.index[i], G
 
 
