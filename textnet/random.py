@@ -11,7 +11,7 @@ from .utils import node_counter, nx2igraph
 from .network import to_graph
 
 
-def randomized_dynamic_time_graph(neighbors, time_index, groupby=lambda x: x):
+def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     """
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -37,14 +37,18 @@ def randomized_dynamic_time_graph(neighbors, time_index, groupby=lambda x: x):
     repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
-        p_vals = repeated_nodes / repeated_nodes.sum()
-        new_nodes = np.arange(len(G), stats.n.iat[i])
-        targets = np.random.choice(all_nodes, size=new_nodes.shape[0], p=p_vals)
-        for new_node, target in zip(new_nodes, targets):
-            G.add_node(new_node, date=stats.index[i])
-            G.add_edge(new_node, target)
-            repeated_nodes[target] += 1
-            repeated_nodes[new_node] += 1
+        # new_nodes = np.arange(len(G), stats.n.iat[i])
+        for new_node in range(len(G), stats.n.iat[i]):
+            p_vals = repeated_nodes / repeated_nodes.sum()
+            targets = np.random.choice(all_nodes, size=m, p=p_vals)
+            G.add_edges_from(zip([new_node] * m, targets))
+            repeated_nodes[targets] += 1
+            repeated_nodes[new_node] += m
+        # for new_node, target in zip(new_nodes, targets):
+        #     G.add_node(new_node, date=stats.index[i])
+        #     G.add_edge(new_node, target)
+        #     repeated_nodes[target] += 1
+        #     repeated_nodes[new_node] += 1
         # for j in range(len(G), stats.n.iat[i]):
         #     # sample m target nodes without replacement for j
         #     targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
