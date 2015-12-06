@@ -113,7 +113,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
             G.add_node(new_node, date=stats.index[i])
             G.add_edge(new_node, target)
             repeated_nodes[target] += 1
-            repeated_node[new_node] += 1
+            repeated_nodes[new_node] += 1
         # for j in range(len(G), stats.n.iat[i]):
         #     G.add_node(j, date=stats.index[i])
         #     # sample m target nodes without replacement for j
