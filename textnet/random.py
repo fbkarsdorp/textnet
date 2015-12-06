@@ -31,10 +31,10 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
     stats = evolving_graph_statistics(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
     # create an empty graph with the nodes at the first time step 
-    for i in range(stats.n.iat[0]):
-        G.add_node(i, date=stats.index[0])    
+    # for i in range(stats.n.iat[0]):
+    #     G.add_node(i, date=stats.index[0])    
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
-    repeated_nodes[range(stats.n.iat[0])] = 1
+    # repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
         new_nodes = np.arange(len(G), stats.n.iat[i])
@@ -88,12 +88,12 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     """
     stats = evolving_graph_statistics(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
-    # create an empty graph with the nodes at the first time step
-    for i in range(stats.n.iat[0]):
-        G.add_node(i, date=stats.index[0])
+    # # create an empty graph with the nodes at the first time step
+    # for i in range(stats.n.iat[0]):
+    #     G.add_node(i, date=stats.index[0])
     # G.add_nodes_from(range(stats.n.iat[0]))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
-    repeated_nodes[range(stats.n.iat[0])] = 1
+    # repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
