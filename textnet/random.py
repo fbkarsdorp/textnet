@@ -41,6 +41,7 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
         for new_node in range(len(G), stats.n.iat[i]):
             p_vals = repeated_nodes / repeated_nodes.sum()
             targets = np.random.choice(all_nodes, size=m, p=p_vals)
+            G.add_node(new_node, date=stats.index[i])
             G.add_edges_from(zip([new_node] * m, targets))
             repeated_nodes[targets] += 1
             repeated_nodes[new_node] += m
