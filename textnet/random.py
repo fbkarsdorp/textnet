@@ -115,7 +115,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         new_nodes = np.arange(len(G), stats.n.iat[i])
         repeated_nodes[new_nodes] += m
         for new_node in new_nodes:        
-            vals = weights
+            vals = repeated_nodes * weights
             p_vals = vals / vals.sum()
             targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
             G.add_node(new_node, date=stats.index[i])
