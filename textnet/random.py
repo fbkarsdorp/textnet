@@ -44,8 +44,8 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
             p_vals = repeated_nodes / repeated_nodes.sum()
             targets = np.random.choice(all_nodes, size=m, p=p_vals)
             G.add_node(new_node, date=stats.index[i])
-            G.add_edges_from(zip([new_node] * m, targets))
-            repeated_nodes[targets] += 1
+            G.add_edges_from(zip([new_node] * m, replace=False, targets))
+            repeated_nodes[targets] += m
             # repeated_nodes[new_node] += m
         # for new_node, target in zip(new_nodes, targets):
         #     G.add_node(new_node, date=stats.index[i])
@@ -108,16 +108,16 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     repeated_nodes[range(stats.n.iat[0])] = 1
     all_nodes = np.arange(stats.n.max())
-    time_steps = [t.year for t in time_index.order()]
+    time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
         weights = np.exp(- gamma * (stats.index[i] - time_steps))
         weights[time_steps > stats.index[i]] = 0
         new_nodes = np.arange(len(G), stats.n.iat[i])
-        repeated_nodes[new_nodes] += 1
+        repeated_nodes[new_nodes] += m
         for new_node in new_nodes:        
             vals = repeated_nodes * weights
             p_vals = vals / vals.sum()
-            targets = np.random.choice(all_nodes, size=m, p=p_vals)
+            targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
             G.add_node(new_node, date=stats.index[i])
             G.add_edges_from(zip([new_node] * m, targets))
             repeated_nodes[targets] += 1
