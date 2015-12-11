@@ -333,7 +333,7 @@ def small_world_index(neighbors, time_index, sigma=0.5):
     """
     G_r = nx2igraph(rewired_time_graph(neighbors, time_index, sigma=sigma))
     G_e = nx2igraph(to_graph(neighbors, time_index, sigma=sigma))
-    # emprical APL and clustering coefficient
+    # empirical APL and clustering coefficient
     L_e = G_e.average_path_length(directed=False)
     C_e = G_e.transitivity_undirected()
     # random APL and clustering coefficient
