@@ -18,7 +18,7 @@ def empirical_growth(choices, time_index, groupby=lambda x: x, sigma=0.5):
     """
     statistics = []
     for time_step, graph in evolving_graphs(choices, time_index, groupby=groupby, sigma=sigma):
-        statistics.append({'n': graph.vcount(), 'm': graph.ecount(), 'time': time_step})
+        statistics.append({'n': len(graph), 'time': time_step})
     return pd.DataFrame(statistics).set_index('time')
 
 
