@@ -102,7 +102,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         if weight_fn == 1:
             weights = (time_steps - stats.index[0] + 1) ** gamma
         elif weight_fn == 2:
-            weights = (time_steps - stats.index[i] + 1) ** gamma
+            weights = (time_steps - stats.index[i]) ** gamma
         elif weight_fn == 3:
             weights = np.exp(- gamma * (stats.index[i] - time_steps))
         else:
@@ -145,7 +145,7 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weig
         if weight_fn == 1:
             weights = (time_steps - stats.index[0] + 1) ** gamma
         elif weight_fn == 2:
-            weights = (time_steps - stats.index[i] + 1) ** gamma
+            weights = (time_steps - stats.index[i]) ** gamma
         elif weight_fn == 3:
             weights = np.exp(- gamma * (stats.index[i] - time_steps))
         else:
