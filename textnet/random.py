@@ -99,8 +99,14 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
-        weights = np.exp(- gamma * (stats.index[i] - time_steps))
-        # weights = (time_steps - stats.index[0] + 1)**(-float(gamma))
+        if 'weight_fn' == 1:
+            weights = (time_steps - stats.index[0] + 1) ** gamma
+        elif 'weight_fn' == 2:
+            weights = (time_steps - stats.index[i] + 1) ** gamma
+        elif 'weight_fn' == 3:
+            weights = np.exp(- gamma * (stats.index[i] - time_steps))
+        else:
+            weights = np.exp(- (stats.index[i] - time_steps) / 1.)
         weights[time_steps > stats.index[i]] = 0
         new_nodes = np.arange(len(G), stats.n.iat[i])
         repeated_nodes[new_nodes] += m
@@ -136,8 +142,14 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
-        # weights = (time_steps - stats.index[0] + 1)**(-float(gamma))
-        weights = np.exp(- gamma * (stats.index[i] - time_steps))
+        if 'weight_fn' == 1:
+            weights = (time_steps - stats.index[0] + 1) ** gamma
+        elif 'weight_fn' == 2:
+            weights = (time_steps - stats.index[i] + 1) ** gamma
+        elif 'weight_fn' == 3:
+            weights = np.exp(- gamma * (stats.index[i] - time_steps))
+        else:
+            weights = np.exp(- (stats.index[i] - time_steps) / 1.)
         weights[time_steps > stats.index[i]] = 0
         p_vals = weights / weights.sum()
         new_nodes = np.arange(len(G), stats.n.iat[i])
