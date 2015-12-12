@@ -77,7 +77,7 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
-def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weight_fn=1):
+def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
     """TODO: update documentation.
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -100,21 +100,12 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
-        print(stats.index[i])        
-        if weight_fn == 1:
-            weights = (time_steps - stats.index[0] + 1) ** gamma
-        elif weight_fn == 2:
-            weights = np.exp(- gamma * (stats.index[i] - time_steps))
-        else:
-            weights = np.exp(- (stats.index[i] - time_steps) / 1.)
+        weights = (time_steps - stats.index[0] + 1) ** gamma
         weights[time_steps > stats.index[i]] = 0
         new_nodes = np.arange(len(G), stats.n.iat[i])
         repeated_nodes[new_nodes] += m
         for new_node in new_nodes:
-            if weight_fn == 4:
-                vals = repeated_nodes + weights
-            else:
-                vals = repeated_nodes * weights
+            vals = repeated_nodes * weights
             p_vals = vals / vals.sum()
             targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
             G.add_node(new_node, date=stats.index[i])
@@ -123,7 +114,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         yield stats.index[i], G
 
 
-def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weight_fn=1):
+def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
     """TODO: update documentation.
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -145,13 +136,7 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weig
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
-        print(stats.index[i])        
-        if weight_fn == 1:
-            weights = (time_steps - stats.index[0] + 1) ** gamma
-        elif weight_fn == 2:
-            weights = np.exp(- gamma * (stats.index[i] - time_steps))
-        else:
-            weights = np.exp(- (stats.index[i] - time_steps) / 1.)
+        weights = (time_steps - stats.index[0] + 1) ** gamma
         weights[time_steps > stats.index[i]] = 0
         p_vals = weights / weights.sum()
         new_nodes = np.arange(len(G), stats.n.iat[i])
