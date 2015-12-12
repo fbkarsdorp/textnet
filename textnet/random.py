@@ -44,6 +44,7 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
+        print(stats.index[i])
         new_nodes = np.arange(len(G), stats.n.iat[i])
         repeated_nodes[new_nodes] += m
         for new_node in new_nodes:
@@ -99,11 +100,10 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
+        print(stats.index[i])        
         if weight_fn == 1:
             weights = (time_steps - stats.index[0] + 1) ** gamma
         elif weight_fn == 2:
-            weights = (time_steps - stats.index[i]) ** gamma
-        elif weight_fn == 3:
             weights = np.exp(- gamma * (stats.index[i] - time_steps))
         else:
             weights = np.exp(- (stats.index[i] - time_steps) / 1.)
@@ -142,11 +142,10 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weig
     all_nodes = np.arange(stats.n.max())
     time_steps = np.array([t.year for t in time_index.order()])
     for i in range(1, stats.shape[0]):
+        print(stats.index[i])        
         if weight_fn == 1:
             weights = (time_steps - stats.index[0] + 1) ** gamma
         elif weight_fn == 2:
-            weights = (time_steps - stats.index[i]) ** gamma
-        elif weight_fn == 3:
             weights = np.exp(- gamma * (stats.index[i] - time_steps))
         else:
             weights = np.exp(- (stats.index[i] - time_steps) / 1.)
