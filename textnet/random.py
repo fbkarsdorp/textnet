@@ -76,7 +76,7 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
 
 
-def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
+def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weight_fn=1):
     """TODO: update documentation.
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -120,7 +120,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         yield stats.index[i], G
 
 
-def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
+def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x, weight_fn=1):
     """TODO: update documentation.
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
