@@ -62,10 +62,30 @@ def _random_subset(seq,m):
     elements if seq holds repeated elements.
     """
     targets=set()
-    while len(targets)<m:
-        x=random.choice(seq)
+    while len(targets) < m:
+        x = random.choice(seq)
         targets.add(x)
     return targets
+
+# def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+#     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+#     G = nx.DiGraph()
+#     for n in range(m):
+#         G.add_node(n, date=stats.index[0])
+#     targets = list(range(m))
+#     repeated_nodes = []
+#     source = m
+#     i = 0
+#     while source < stats.n.max():
+#         G.add_node(source, date=stats.index[i])
+#         G.add_edges_from(zip([source] * m, targets))
+#         repeated_nodes.extend(targets)
+#         repeated_nodes.extend([source] * m)
+#         targets = _random_subset(repeated_nodes, m)
+#         source += 1
+#         if source > stats.n.iat[i]:
+#             yield stats.index[i], G
+#             i += 1
 
 def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
@@ -73,19 +93,20 @@ def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     for n in range(m):
         G.add_node(n, date=stats.index[0])
     targets = list(range(m))
-    repeated_nodes = []
+    repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     source = m
     i = 0
     while source < stats.n.max():
         G.add_node(source, date=stats.index[i])
         G.add_edges_from(zip([source] * m, targets))
-        repeated_nodes.extend(targets)
-        repeated_nodes.extend([source] * m)
-        targets = _random_subset(repeated_nodes, m)
+        repeated_nodes[targets] += 1
+        repeated_nodes[source] += m
+        p = repeated_nodes / repeated_nodes.sum()
+        targets = np.random.choice(all_nodes, size=m, p=p)
         source += 1
         if source > stats.n.iat[i]:
-            i += 1
             yield stats.index[i], G
+            i += 1
 
 
 
