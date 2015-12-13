@@ -110,7 +110,6 @@ def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
             i += 1
 
 
-
 def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     """
     Returns a random graphs based on the empirical data 
@@ -151,22 +150,46 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     """
     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
+    for n in range(m):
+        G.add_node(n, date=stats.index[0])
+    targets = list(range(m))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     all_nodes = np.arange(stats.n.max())
+    source = m
+    i = 0
     time_steps = np.array([t.year for t in time_index.order()])
-    for i in range(1, stats.shape[0]):
+    while source < stats.n.max():
+        G.add_node(source, date=stats.index[i])
+        G.add_edges_from(zip([source] * m, targets))
+        repeated_nodes[targets] += 1
+        repeated_nodes[source] += m
         weights = (time_steps - stats.index[0] + 1) ** gamma
         weights[time_steps > stats.index[i]] = 0
-        new_nodes = np.arange(len(G), stats.n.iat[i])
-        repeated_nodes[new_nodes] += m
-        for new_node in new_nodes:
-            vals = repeated_nodes * weights
-            p_vals = vals / vals.sum()
-            targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-            G.add_node(new_node, date=stats.index[i])
-            G.add_edges_from(zip([new_node] * m, targets))
-            repeated_nodes[targets] += 1
-        yield stats.index[i], G
+        p = repeated_nodes * weights
+        p = p / p.sum()
+        targets = np.random.choice(all_nodes, size=m, p=p)
+        source += 1
+        if source > stats.n.iat[i]:
+            yield stats.index[i], G
+            i += 1
+    # stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+    # G = nx.DiGraph()
+    # repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
+    # all_nodes = np.arange(stats.n.max())
+    # time_steps = np.array([t.year for t in time_index.order()])
+    # for i in range(1, stats.shape[0]):
+    #     weights = (time_steps - stats.index[0] + 1) ** gamma
+    #     weights[time_steps > stats.index[i]] = 0
+    #     new_nodes = np.arange(len(G), stats.n.iat[i])
+    #     repeated_nodes[new_nodes] += m
+    #     for new_node in new_nodes:
+    #         vals = repeated_nodes * weights
+    #         p_vals = vals / vals.sum()
+    #         targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+    #         G.add_node(new_node, date=stats.index[i])
+    #         G.add_edges_from(zip([new_node] * m, targets))
+    #         repeated_nodes[targets] += 1
+    #     yield stats.index[i], G
 
 
 def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
@@ -185,21 +208,41 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
         Number of edges to attach from a new node to existing nodes
     groupby : callable
         Function specifying the time steps at which the graphs should be created
-    """    
+    """
     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
+    for n in range(m):
+        G.add_node(n, date=stats.index[0])
+    targets = list(range(m))
     all_nodes = np.arange(stats.n.max())
+    source = m
+    i = 0
     time_steps = np.array([t.year for t in time_index.order()])
-    for i in range(1, stats.shape[0]):
+    while source < stats.n.max():
+        G.add_node(source, date=stats.index[i])
+        G.add_edges_from(zip([source] * m, targets))
         weights = (time_steps - stats.index[0] + 1) ** gamma
         weights[time_steps > stats.index[i]] = 0
-        p_vals = weights / weights.sum()
-        new_nodes = np.arange(len(G), stats.n.iat[i])
-        for new_node in new_nodes:
-            targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-            G.add_node(new_node, date=stats.index[i])
-            G.add_edges_from(zip([new_node] * m, targets))
-        yield stats.index[i], G
+        p = weights / weights.sum()
+        targets = np.random.choice(all_nodes, size=m, p=p)
+        source += 1
+        if source > stats.n.iat[i]:
+            yield stats.index[i], G
+            i += 1    
+    # stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+    # G = nx.DiGraph()
+    # all_nodes = np.arange(stats.n.max())
+    # time_steps = np.array([t.year for t in time_index.order()])
+    # for i in range(1, stats.shape[0]):
+    #     weights = (time_steps - stats.index[0] + 1) ** gamma
+    #     weights[time_steps > stats.index[i]] = 0
+    #     p_vals = weights / weights.sum()
+    #     new_nodes = np.arange(len(G), stats.n.iat[i])
+    #     for new_node in new_nodes:
+    #         targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+    #         G.add_node(new_node, date=stats.index[i])
+    #         G.add_edges_from(zip([new_node] * m, targets))
+    #     yield stats.index[i], G
 
 
 def gnp_random_dynamic_time_graph(neighbors, time_index, p=0.3, groupby=lambda x: x): 
