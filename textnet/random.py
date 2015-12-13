@@ -94,6 +94,7 @@ def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         G.add_node(n, date=stats.index[0])
     targets = list(range(m))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
+    all_nodes = np.arange(stats.n.max())
     source = m
     i = 0
     while source < stats.n.max():
