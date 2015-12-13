@@ -44,7 +44,6 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     all_nodes = np.arange(stats.n.max())
     for i in range(1, stats.shape[0]):
-        print(stats.index[i])
         new_nodes = np.arange(len(G), stats.n.iat[i])
         repeated_nodes[new_nodes] += m
         for new_node in new_nodes:
@@ -54,6 +53,40 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
             G.add_edges_from(zip([new_node] * m, targets))
             repeated_nodes[targets] += 1
         yield stats.index[i], G
+
+import random
+def _random_subset(seq,m):
+    """ Return m unique elements from seq.
+
+    This differs from random.sample which can return repeated
+    elements if seq holds repeated elements.
+    """
+    targets=set()
+    while len(targets)<m:
+        x=random.choice(seq)
+        targets.add(x)
+    return targets
+
+def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+    stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+    G = nx.DiGraph()
+    for n in range(m):
+        G.add_node(n, date=stats.index[0])
+    targets = list(range(m))
+    repeated_nodes = []
+    source = m
+    i = 0
+    while source < stats.n.max():
+        G.add_node(source, date=stats.index[i])
+        G.add_edges_from(zip([source] * m, targets))
+        repeated_nodes.extend(targets)
+        repeated_nodes.extend([source] * m)
+        targets = _random_subset(repeated_nodes, m)
+        source += 1
+        if source > stats.n.iat[i]:
+            i += 1
+            yield stats.index[i], G
+
 
 
 def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
