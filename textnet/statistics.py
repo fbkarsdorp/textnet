@@ -7,6 +7,7 @@ import seaborn as sns
 
 from sklearn.metrics import r2_score
 from scipy.optimize import curve_fit
+from scipy.stats import ks_2samp
 
 from .network import evolving_graphs, to_graph
 from .utils import nx2igraph
@@ -166,7 +167,7 @@ def eval_sigmas(neighbors, time_index, min_sigma=0, max_sigma=1, step_size=0.01)
 
 def cdf(x, survival=False):
     "Return the cumulative distribution function of x."
-    x = np.array(x)
+    x = np.array(list(x))
     x = x[x > 0]
     x = np.sort(np.array(x))
     cdf = np.searchsorted(x, x, side='left') / x.shape[0]
@@ -179,6 +180,15 @@ def cdf(x, survival=False):
 def ccdf(x):
     "Return the complementary cumulative distribution function of x."
     return cdf(x, survival=True)
+
+
+def kolmogorov_smirnoff(G1, G2, mode='all'):
+    d_fn = lambda g: getattr(g, 'in_degree' if mode == 'in' else 
+                                'out_degree' if mode == 'out' else 
+                                'degree')
+    d1 = list(v for v in d_fn(G1)().values() if v > 0)
+    d2 = list(v for v in d_fn(G2)().values() if v > 0)
+    return ks_2samp(d1, d2)
 
 
 def lorenz(data):
