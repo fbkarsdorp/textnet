@@ -106,7 +106,7 @@ def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
         p = repeated_nodes / repeated_nodes.sum()
         targets = np.random.choice(all_nodes, size=m, p=p)
         source += 1
-        if source > stats.n.iat[i]:
+        if source >= stats.n.iat[i]:
             yield stats.index[i], G
             i += 1
 
