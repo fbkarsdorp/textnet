@@ -244,8 +244,7 @@ def evolving_graphs(choices, time_index, groupby=lambda x: x, sigma=0.5):
         The threshold percentage of how often a data point must be 
         assigned as nearest neighbor.
     """
-    indexes, time_index = zip(*sorted((c, time_index[c]) for c in choices.keys()))
-    index_series = pd.Series(indexes, index=time_index)
+    index_series = pd.Series(sorted(choices.keys()), index=time_index)
     G = nx.DiGraph()
     _nodes = node_counter()
     for group_id, story_ids in index_series.groupby(groupby):
