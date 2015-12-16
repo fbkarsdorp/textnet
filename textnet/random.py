@@ -99,7 +99,7 @@ def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     i = 0
     while source < stats.n.max():
         print(stats.index[i])
-        G.add_node(source, date=stats.index[i])
+        G.add_node(source, date=stats.index[i], time_index=i)
         G.add_edges_from(zip([source] * m, targets))
         repeated_nodes[targets] += 1
         repeated_nodes[source] += m
@@ -160,7 +160,7 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
     i = 0
     time_steps = np.array([t.year for t in time_index.order()])
     while source < stats.n.max():
-        G.add_node(source, date=stats.index[i])
+        G.add_node(source, date=stats.index[i], time_index=i)
         G.add_edges_from(zip([source] * m, targets))
         repeated_nodes[targets] += 1
         repeated_nodes[source] += m
@@ -220,7 +220,7 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
     i = 0
     time_steps = np.array([t.year for t in time_index.order()])
     while source < stats.n.max():
-        G.add_node(source, date=stats.index[i])
+        G.add_node(source, date=stats.index[i], time_index=i)
         G.add_edges_from(zip([source] * m, targets))
         weights = (time_steps - stats.index[0] + 1) ** gamma
         weights[time_steps > stats.index[i]] = 0
