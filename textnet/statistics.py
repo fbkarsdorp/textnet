@@ -7,7 +7,7 @@ import seaborn as sns
 
 from sklearn.metrics import r2_score
 from scipy.optimize import curve_fit
-from scipy.stats import ks_2samp
+from scipy.stats import ks_2samp, wilcoxon
 
 from .network import evolving_graphs, to_graph
 from .utils import nx2igraph
@@ -15,7 +15,10 @@ from .utils import nx2igraph
 
 def effective_diameter(G, mode="ALL", q=90):
     if mode == 'OUT':
-        return np.percentile(G.eccentricity(), q=q)
+        try:
+            return np.percentile(G.eccentricity(), q=q)
+        except IndexError:
+            return None
     distance_matrix = np.array(G.shortest_paths(mode=mode), dtype=np.float64)
     distance_matrix[distance_matrix == np.inf] = np.nan
     return np.percentile(np.nanmax(distance_matrix, axis=1), q)
@@ -39,7 +42,10 @@ def graph_statistics(graph, lower_degree_bounds=0):
         graph = nx2igraph(graph)
     degree_distribution = np.array(graph.degree())
     in_degree_distribution = np.array(graph.indegree())
-    largest_component = max(map(len, graph.components(mode="WEAK"))) / len(graph.vs)
+    try:
+        largest_component = max(map(len, graph.components(mode="WEAK"))) / len(graph.vs)
+    except (ZeroDivisionError, ValueError):
+        largest_component = 0
     return {
         'n': graph.vcount(), 
         'm': graph.ecount(), 
@@ -181,11 +187,18 @@ def ccdf(x):
     "Return the complementary cumulative distribution function of x."
     return cdf(x, survival=True)
 
+def degree_hist(G):
+    degrees = G.in_degree()
+    values = sorted(set(degrees.values()))
+    hist = [degrees.values().count(x) for x in values]
+    n = G.number_of_nodes()
+    return [x / n for x in hist]
 
 def kolmogorov_smirnoff(G1, G2, mode='all'):
     d_fn = lambda g: getattr(g, 'in_degree' if mode == 'in' else 
                                 'out_degree' if mode == 'out' else 
                                 'degree')
+    
     d1 = list(v for v in d_fn(G1)().values() if v > 0)
     d2 = list(v for v in d_fn(G2)().values() if v > 0)
     return ks_2samp(d1, d2)

@@ -22,7 +22,7 @@ def empirical_growth(choices, time_index, groupby=lambda x: x, sigma=0.5):
     return pd.DataFrame(statistics).set_index('time')
 
 
-def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+def preferential_attachment_model(neighbors, time_index, m=1, p=0.5, groupby=lambda x: x):
     """
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -38,56 +38,7 @@ def randomized_dynamic_time_graph(neighbors, time_index, m=1, groupby=lambda x: 
         Number of edges to attach from a new node to existing nodes
     groupby : callable
         Function specifying the time steps at which the graphs should be created
-    """
-    stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
-    G = nx.DiGraph()
-    repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
-    all_nodes = np.arange(stats.n.max())
-    for i in range(1, stats.shape[0]):
-        new_nodes = np.arange(len(G), stats.n.iat[i])
-        repeated_nodes[new_nodes] += m
-        for new_node in new_nodes:
-            p_vals = repeated_nodes / repeated_nodes.sum()
-            targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-            G.add_node(new_node, date=stats.index[i])
-            G.add_edges_from(zip([new_node] * m, targets))
-            repeated_nodes[targets] += 1
-        yield stats.index[i], G
-
-import random
-def _random_subset(seq,m):
-    """ Return m unique elements from seq.
-
-    This differs from random.sample which can return repeated
-    elements if seq holds repeated elements.
-    """
-    targets=set()
-    while len(targets) < m:
-        x = random.choice(seq)
-        targets.add(x)
-    return targets
-
-# def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
-#     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
-#     G = nx.DiGraph()
-#     for n in range(m):
-#         G.add_node(n, date=stats.index[0])
-#     targets = list(range(m))
-#     repeated_nodes = []
-#     source = m
-#     i = 0
-#     while source < stats.n.max():
-#         G.add_node(source, date=stats.index[i])
-#         G.add_edges_from(zip([source] * m, targets))
-#         repeated_nodes.extend(targets)
-#         repeated_nodes.extend([source] * m)
-#         targets = _random_subset(repeated_nodes, m)
-#         source += 1
-#         if source > stats.n.iat[i]:
-#             yield stats.index[i], G
-#             i += 1
-
-def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+    """    
     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
     for n in range(m):
@@ -98,20 +49,22 @@ def barabasi_albert_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     source = m
     i = 0
     while source < stats.n.max():
-        print(stats.index[i])
         G.add_node(source, date=stats.index[i], time_step=i)
         G.add_edges_from(zip([source] * m, targets))
         repeated_nodes[targets] += 1
         repeated_nodes[source] += m
-        p = repeated_nodes / repeated_nodes.sum()
-        targets = np.random.choice(all_nodes, size=m, p=p)
+        if np.random.rand() < p:
+            p_vals = repeated_nodes / repeated_nodes.sum()
+            targets = np.random.choice(all_nodes, size=m, p=p_vals)
+        else:
+            targets = np.random.choice(np.nonzero(repeated_nodes)[0], size=m)        
         source += 1
         if source >= stats.n.iat[i]:
             yield stats.index[i], G
             i += 1
 
 
-def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
+def randomized_time_graph(neighbors, time_index, m=1, p=0.5, groupby=lambda x: x):
     """
     Returns a random graphs based on the empirical data 
     according to the Barabási–Albert preferential attachment model. 
@@ -128,11 +81,11 @@ def randomized_time_graph(neighbors, time_index, m=1, groupby=lambda x: x):
     groupby : callable
         Function specifying the time steps at which the graphs should be created   
     """ 
-    return deque(randomized_dynamic_time_graph(
-        neighbors, time_index, m=m, groupby=groupby), maxlen=1)[0][1]
+    return deque(preferential_attachment_model(
+        neighbors, time_index, m=m, p=p, groupby=groupby), maxlen=1)[0][1]
 
 
-def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
+def temporal_preferential_model(neighbors, time_index, m=1, p=0.5, gamma=0.1, groupby=lambda x: x):
     """TODO: update documentation.
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -148,52 +101,31 @@ def chronological_attachment_model(neighbors, time_index, m=1, gamma=0.1, groupb
         Number of edges to attach from a new node to existing nodes
     groupby : callable
         Function specifying the time steps at which the graphs should be created
-    """
+    """    
     stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
     G = nx.DiGraph()
-    for n in range(m):
-        G.add_node(n, date=stats.index[0], time_step=n)
-    targets = list(range(m))
     repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
     all_nodes = np.arange(stats.n.max())
-    source = m
-    i = 0
-    time_steps = np.array([t.year for t in time_index.order()])
-    while source < stats.n.max():
-        G.add_node(source, date=stats.index[i], time_step=i)
-        G.add_edges_from(zip([source] * m, targets))
-        repeated_nodes[targets] += 1
-        repeated_nodes[source] += m
-        weights = (time_steps - stats.index[0] + 1) ** gamma
+    time_steps = np.array([t.year for t in time_index.sort_values()])
+    for i in range(1, stats.shape[0]):
+        weights =  np.exp(-(stats.index[i] - time_steps) / gamma)
         weights[time_steps > stats.index[i]] = 0
-        p = repeated_nodes * weights
-        p = p / p.sum()
-        targets = np.random.choice(all_nodes, size=m, p=p)
-        source += 1
-        if source > stats.n.iat[i]:
-            yield stats.index[i], G
-            i += 1
-    # stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
-    # G = nx.DiGraph()
-    # repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
-    # all_nodes = np.arange(stats.n.max())
-    # time_steps = np.array([t.year for t in time_index.order()])
-    # for i in range(1, stats.shape[0]):
-    #     weights = (time_steps - stats.index[0] + 1) ** gamma
-    #     weights[time_steps > stats.index[i]] = 0
-    #     new_nodes = np.arange(len(G), stats.n.iat[i])
-    #     repeated_nodes[new_nodes] += m
-    #     for new_node in new_nodes:
-    #         vals = repeated_nodes * weights
-    #         p_vals = vals / vals.sum()
-    #         targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-    #         G.add_node(new_node, date=stats.index[i])
-    #         G.add_edges_from(zip([new_node] * m, targets))
-    #         repeated_nodes[targets] += 1
-    #     yield stats.index[i], G
+        new_nodes = np.arange(len(G), stats.n.iat[i])
+        repeated_nodes[new_nodes] += m
+        for new_node in new_nodes:
+            if np.random.rand() < p:
+                vals = repeated_nodes * weights
+                p_vals = vals / vals.sum()
+                targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+            else:
+                targets = np.random.choice(np.nonzero(repeated_nodes)[0], size=m)                
+            G.add_node(new_node, date=stats.index[i], time_step=i)
+            G.add_edges_from(zip([new_node] * m, targets))
+            repeated_nodes[targets] += 1
+        yield stats.index[i], G
 
 
-def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
+def aging_model(neighbors, time_index, m=1, p=0.5, alpha=0.1, gamma=0.1, groupby=lambda x: x):
     """TODO: update documentation.
     Returns a generator of random graphs at each time step t in time_index 
     according to the Barabási–Albert preferential attachment model. 
@@ -218,32 +150,128 @@ def aging_model(neighbors, time_index, m=1, gamma=0.1, groupby=lambda x: x):
     all_nodes = np.arange(stats.n.max())
     source = m
     i = 0
-    time_steps = np.array([t.year for t in time_index.order()])
+    time_steps = np.array([t.year for t in time_index.sort_values()])
     while source < stats.n.max():
         G.add_node(source, date=stats.index[i], time_step=i)
         G.add_edges_from(zip([source] * m, targets))
-        weights = (time_steps - stats.index[0] + 1) ** gamma
-        weights[time_steps > stats.index[i]] = 0
-        p = weights / weights.sum()
-        targets = np.random.choice(all_nodes, size=m, p=p)
+        if np.random.rand() < p:
+            weights = np.exp(-(stats.index[i] - time_steps) / gamma)
+            weights[time_steps > stats.index[i]] = 0
+            p_vals = weights / weights.sum()
+            targets = np.random.choice(all_nodes, size=m, p=p_vals)
+        else:
+            targets = [np.random.randint(stats.n.iat[i])]
         source += 1
         if source > stats.n.iat[i]:
             yield stats.index[i], G
             i += 1    
-    # stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
-    # G = nx.DiGraph()
-    # all_nodes = np.arange(stats.n.max())
-    # time_steps = np.array([t.year for t in time_index.order()])
-    # for i in range(1, stats.shape[0]):
-    #     weights = (time_steps - stats.index[0] + 1) ** gamma
-    #     weights[time_steps > stats.index[i]] = 0
-    #     p_vals = weights / weights.sum()
-    #     new_nodes = np.arange(len(G), stats.n.iat[i])
-    #     for new_node in new_nodes:
-    #         targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
-    #         G.add_node(new_node, date=stats.index[i])
-    #         G.add_edges_from(zip([new_node] * m, targets))
-    #     yield stats.index[i], G
+
+
+def attraction_model(neighbors, time_index, m=1, p=0.5, alpha=0.1, groupby=lambda x: x):
+    stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+    G = nx.DiGraph()
+    for n in range(m):
+        G.add_node(n, date=stats.index[0], time_step=n)
+    targets = list(range(m))
+    all_nodes = np.arange(stats.n.max())
+    attraction = np.random.mtrand.dirichlet([alpha] * all_nodes.shape[0])    
+    source = m
+    i = 0
+    time_steps = np.array([t.year for t in time_index.sort_values()])    
+    while source < stats.n.max():
+        G.add_node(source, date=stats.index[i], time_step=i)
+        G.add_edges_from(zip([source] * m, targets))
+        if np.random.rand() < p:
+            weights = attraction * 1
+            weights[time_steps > stats.index[i]] = 0
+            p_vals = weights / weights.sum()
+            targets = np.random.choice(all_nodes, size=m, p=p_vals)
+        else:
+            targets = [np.random.randint(stats.n.iat[i])]
+        source += 1
+        if source > stats.n.iat[i]:
+            yield stats.index[i], G
+            i += 1
+
+def temporal_attraction_model(neighbors, time_index, m=1, alpha=0.1, p=0.5, gamma=0.1, groupby=lambda x: x):
+    """TODO: update documentation.
+    Returns a generator of random graphs at each time step t in time_index 
+    according to the Barabási–Albert preferential attachment model. 
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    m : int, default 1
+        Number of edges to attach from a new node to existing nodes
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    """    
+    stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+    G = nx.DiGraph()
+    repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
+    all_nodes = np.arange(stats.n.max())
+    attraction = np.random.mtrand.dirichlet([alpha] * all_nodes.shape[0])    
+    time_steps = np.array([t.year for t in time_index.sort_values()])
+    for i in range(1, stats.shape[0]):
+        weights = attraction * np.exp(-(stats.index[i] - time_steps) / gamma)
+        weights[time_steps > stats.index[i]] = 0
+        new_nodes = np.arange(len(G), stats.n.iat[i])
+        repeated_nodes[new_nodes] += m
+        for new_node in new_nodes:
+            if np.random.rand() < p:
+                p_vals = weights / weights.sum()
+                targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+            else:
+                targets = np.random.choice(np.nonzero(repeated_nodes)[0], size=m)                
+            G.add_node(new_node, date=stats.index[i], time_step=i)
+            G.add_edges_from(zip([new_node] * m, targets))
+            repeated_nodes[targets] += 1
+        yield stats.index[i], G  
+
+
+def temporal_preferential_attraction_model(neighbors, time_index, m=1, alpha=0.1, p=0.5, gamma=0.1, groupby=lambda x: x):
+    """TODO: update documentation.
+    Returns a generator of random graphs at each time step t in time_index 
+    according to the Barabási–Albert preferential attachment model. 
+
+    Parameters
+    ----------
+    neighbors : output of textnet.bootstrap_neighbors or textnet.bootstrap_neighbors_sparse_batch
+    time_index : numpy.ndarray of Timestamps or pandas.DatetimeIndex, shape: (n_nodes) 
+        Index corresponding to time points of each sample in G. If supplied,
+        neighbors for each node n in G will only consist of samples that occur 
+        before or at the time point corresponding with x.
+    m : int, default 1
+        Number of edges to attach from a new node to existing nodes
+    groupby : callable
+        Function specifying the time steps at which the graphs should be created
+    """    
+    stats = empirical_growth(neighbors, time_index, groupby=groupby).sort_index()
+    G = nx.DiGraph()
+    repeated_nodes = np.zeros(stats.n.max(), dtype=np.float64)
+    all_nodes = np.arange(stats.n.max())
+    attraction = np.random.mtrand.dirichlet([alpha] * all_nodes.shape[0])    
+    time_steps = np.array([t.year for t in time_index.sort_values()])
+    for i in range(1, stats.shape[0]):
+        weights = attraction * np.exp(-(stats.index[i] - time_steps) / gamma)
+        weights[time_steps > stats.index[i]] = 0
+        new_nodes = np.arange(len(G), stats.n.iat[i])
+        repeated_nodes[new_nodes] += m
+        for new_node in new_nodes:
+            if np.random.rand() < p:
+                vals = repeated_nodes * weights
+                p_vals = vals / vals.sum()
+                targets = np.random.choice(all_nodes, size=m, replace=False, p=p_vals)
+            else:
+                targets = np.random.choice(np.nonzero(repeated_nodes)[0], size=m)                
+            G.add_node(new_node, date=stats.index[i], time_step=i)
+            G.add_edges_from(zip([new_node] * m, targets))
+            repeated_nodes[targets] += 1
+        yield stats.index[i], G            
 
 
 def gnp_random_dynamic_time_graph(neighbors, time_index, p=0.3, groupby=lambda x: x): 
